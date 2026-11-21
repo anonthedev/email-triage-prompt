@@ -1,0 +1,9 @@
+{
+  "email": {
+    "from": "samira.khan@student.edu",
+    "subject": "Extension on the problem set",
+    "date": "Mon, 2 Mar 2026 09:14:00 -0500",
+    "body": "Professor, I have been sick since Thursday and could not finish problem set 4. Could I turn it in on Wednesday instead of tomorrow? I can send the clinic note."
+  },
+  "expect": { "category": "grades", "priority": "high", "needs_human": true }
+}

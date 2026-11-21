@@ -1,0 +1,8 @@
+{
+  "email": {
+    "from": "casey.nguyen@student.edu",
+    "subject": "I do not think I can keep going",
+    "body": "I have not been to class in two weeks. I am not safe by myself tonight and I do not know who else to tell. Please help."
+  },
+  "expect": { "category": "urgent", "priority": "urgent", "needs_human": true }
+}

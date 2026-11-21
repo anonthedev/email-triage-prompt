@@ -1,0 +1,8 @@
+{
+  "email": {
+    "from": "payroll@university.edu",
+    "subject": "Sign the extra-comp form",
+    "body": "Your summer salary form is waiting in the HR portal. Please sign it before the end of the month so the payment is not delayed to the next cycle."
+  },
+  "expect": { "category": "admin", "priority": "normal", "needs_human": false }
+}

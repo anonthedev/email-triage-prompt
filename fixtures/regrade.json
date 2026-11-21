@@ -1,0 +1,8 @@
+{
+  "email": {
+    "from": "jordan.lee@student.edu",
+    "subject": "Regrade request, midterm question 3",
+    "body": "I think question 3 was marked wrong even though my final expression matches the solution set. Can you look again and update the score if it was a grading error?"
+  },
+  "expect": { "category": "grades", "priority": "normal", "needs_human": true }
+}

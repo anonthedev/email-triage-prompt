@@ -1,0 +1,8 @@
+{
+  "email": {
+    "from": "maya@learnfast.io",
+    "subject": "A tool your students will love",
+    "body": "Hi Professor, Learnfast is an AI homework platform. Faculty who switch this term get a free department pilot. Can I send a 15-minute demo link?"
+  },
+  "expect": { "category": "vendor", "priority": "low", "needs_human": false }
+}

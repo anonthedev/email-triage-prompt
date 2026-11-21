@@ -1,0 +1,8 @@
+{
+  "email": {
+    "from": "alex.morgan@student.edu",
+    "subject": "Office hours this Thursday",
+    "body": "Are you free at 2pm on Thursday to talk through the project proposal? I can also do Friday morning if that is better."
+  },
+  "expect": { "category": "scheduling", "priority": "normal", "needs_human": false }
+}

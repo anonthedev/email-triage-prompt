@@ -1,0 +1,8 @@
+{
+  "email": {
+    "from": "priya@otheruni.edu",
+    "subject": "Draft of the workshop paper",
+    "body": "I pushed a revised introduction and the new ablation table. No rush this week, but I would like your read before we send it to the coauthors next month."
+  },
+  "expect": { "category": "research", "priority": "normal", "needs_human": false }
+}

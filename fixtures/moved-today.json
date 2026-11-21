@@ -1,0 +1,8 @@
+{
+  "email": {
+    "from": "dean.office@university.edu",
+    "subject": "Search committee moved to 4pm today",
+    "body": "The candidate meeting that was at 1pm has moved to 4pm today in room 210. Please reply if you cannot make the new time."
+  },
+  "expect": { "category": "scheduling", "priority": "urgent", "needs_human": false }
+}

@@ -1,0 +1,8 @@
+{
+  "email": {
+    "from": "rita.osei@student.edu",
+    "subject": "Recommendation letter, deadline Friday",
+    "body": "I am applying to the summer research program and the letter is due Friday. You taught me in algorithms last fall. Would you be willing to write it?"
+  },
+  "expect": { "category": "advising", "priority": "high", "needs_human": true }
+}

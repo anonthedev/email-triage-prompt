@@ -1,0 +1,8 @@
+{
+  "email": {
+    "from": "news@faculty-senate.edu",
+    "subject": "Weekly senate digest",
+    "body": "This week's digest: minutes from the last meeting are posted, the parking committee meets next month, and the library has extended weekend hours. No reply is needed."
+  },
+  "expect": { "category": "fyi", "priority": "low", "needs_human": false }
+}
