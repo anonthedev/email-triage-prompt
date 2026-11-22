@@ -1,5 +1,6 @@
+import { cache } from "react";
 import { auth } from "@/auth";
-import { readGoogleToken } from "./google-tokens";
+import { withGmailSlot, type GmailSlot } from "./gmail-session";
 
 export type Viewer =
   | { status: "signed-out" }
@@ -15,7 +16,7 @@ export function googleOAuthConfigured(env: NodeJS.ProcessEnv = process.env): boo
   return Boolean(env.GOOGLE_CLIENT_ID?.trim() && env.GOOGLE_CLIENT_SECRET?.trim() && env.AUTH_SECRET?.trim());
 }
 
-export async function viewer(): Promise<Viewer> {
+async function readViewer(): Promise<Viewer> {
   if (!process.env.AUTH_SECRET?.trim()) return { status: "signed-out" };
   try {
     const session = await auth();
@@ -32,20 +33,33 @@ export async function viewer(): Promise<Viewer> {
   }
 }
 
+const loadGmailSession = cache(async (): Promise<{ person: Viewer; slot: GmailSlot }> => {
+  const slot: GmailSlot = {};
+  const person = await withGmailSlot(slot, readViewer);
+  return { person, slot: { accessToken: slot.accessToken, error: slot.error } };
+});
+
+export async function viewer(): Promise<Viewer> {
+  return (await loadGmailSession()).person;
+}
+
 export type GmailGate =
   | { ok: true; accessToken: string }
   | { ok: false; reason: "signed-out" }
   | { ok: false; reason: "message"; message: string };
 
-export async function requireGmail(): Promise<GmailGate> {
-  const person = await viewer();
+export function gmailGate(person: Viewer, slot: GmailSlot): GmailGate {
   if (person.status === "signed-out") return { ok: false, reason: "signed-out" };
-  if (person.error === "RefreshTokenError") {
+  if (person.error === "RefreshTokenError" || slot.error === "RefreshTokenError") {
     return { ok: false, reason: "message", message: "Gmail access expired. Sign in again." };
   }
-  const accessToken = person.userId ? readGoogleToken(person.userId)?.accessToken : undefined;
-  if (!accessToken) {
-    return { ok: false, reason: "message", message: "The Gmail access token is not on disk. Sign in again." };
+  if (!slot.accessToken) {
+    return { ok: false, reason: "message", message: "Gmail access is missing from this session. Sign in again." };
   }
-  return { ok: true, accessToken };
+  return { ok: true, accessToken: slot.accessToken };
+}
+
+export async function requireGmail(): Promise<GmailGate> {
+  const { person, slot } = await loadGmailSession();
+  return gmailGate(person, slot);
 }

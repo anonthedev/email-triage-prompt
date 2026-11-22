@@ -6,8 +6,9 @@ import { describe, it } from "node:test";
 import { classificationKey, readClassification, writeClassification } from "../src/lib/cache";
 import { applyMailView, type FilterableMail } from "../src/lib/filter";
 import { emailFromGmail, htmlToText, type MimePart } from "../src/lib/gmail";
-import { deleteGoogleToken, readGoogleToken, writeGoogleToken } from "../src/lib/google-tokens";
+import { noteGmailToken, withGmailSlot } from "../src/lib/gmail-session";
 import { mapPool } from "../src/lib/pool";
+import { gmailGate } from "../src/lib/viewer";
 import { isWeak, senderName } from "../src/lib/present";
 import { loadSample } from "../src/lib/samples";
 import { compareTriage, type SortableMail } from "../src/lib/sort";
@@ -131,15 +132,30 @@ describe("classification cache", () => {
   });
 });
 
-describe("google token file", () => {
-  it("stores only the access token under a safe file name", () => {
-    const dir = mkdtempSync(join(tmpdir(), "triage-google-"));
-    writeGoogleToken("../escaped", { accessToken: "token-a", expiresAt: 10 }, dir);
-    assert.deepEqual(readGoogleToken("../escaped", dir), { accessToken: "token-a", expiresAt: 10 });
-    assert.deepEqual(readdirSync(dir), ["___escaped.json"]);
-    deleteGoogleToken("../escaped", dir);
-    assert.equal(readGoogleToken("../escaped", dir), undefined);
-    rmSync(dir, { recursive: true, force: true });
+describe("gmail session", () => {
+  it("keeps the access token on the request that decoded the session", async () => {
+    const seen = await withGmailSlot({}, async () => {
+      noteGmailToken({ accessToken: "ya29.token" });
+      const slot: { accessToken?: string } = {};
+      await withGmailSlot(slot, async () => {
+        noteGmailToken({ accessToken: "ya29.other" });
+      });
+      return slot.accessToken;
+    });
+    const outside: { accessToken?: string } = {};
+    noteGmailToken({ accessToken: "ya29.leftover" });
+    assert.equal(seen, "ya29.other");
+    assert.equal(outside.accessToken, undefined);
+  });
+
+  it("uses the session token and ignores a missing file", () => {
+    const person = { status: "signed-in" as const, userId: "user-1", email: "a@b.c" };
+    assert.deepEqual(gmailGate(person, { accessToken: "ya29.token" }), { ok: true, accessToken: "ya29.token" });
+    assert.equal(gmailGate(person, {}).ok, false);
+    assert.equal(gmailGate(person, { error: "RefreshTokenError", accessToken: "stale" }).ok, false);
+    const signedOut = gmailGate({ status: "signed-out" }, { accessToken: "ya29.token" });
+    assert.equal(signedOut.ok, false);
+    if (!signedOut.ok) assert.equal(signedOut.reason, "signed-out");
   });
 });
 

@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import type { JWT } from "@auth/core/jwt";
 import Google from "next-auth/providers/google";
-import { deleteGoogleToken, writeGoogleToken } from "./lib/google-tokens";
+import { noteGmailToken } from "./lib/gmail-session";
 
 declare module "next-auth" {
   interface Session {
@@ -74,16 +74,6 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
   }
 }
 
-function rememberAccessToken(token: JWT): void {
-  const userId = token.sub ?? "";
-  if (!userId || typeof token.accessToken !== "string" || token.error === "RefreshTokenError") return;
-  try {
-    writeGoogleToken(userId, { accessToken: token.accessToken, expiresAt: token.expiresAt });
-  } catch {
-    console.error("Could not store the Gmail access token on disk.");
-  }
-}
-
 const google = googleProvider();
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -101,20 +91,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       } else if (typeof token.expiresAt === "number" && Date.now() / 1000 > token.expiresAt - 60) {
         token = await refreshAccessToken(token);
       }
-      rememberAccessToken(token);
+      noteGmailToken(token);
       return token;
     },
     session({ session, token }) {
       if (session.user && token.sub) session.user.id = token.sub;
       if (token.error === "RefreshTokenError") session.error = "RefreshTokenError";
       return session;
-    },
-  },
-  events: {
-    signOut(message) {
-      if ("token" in message && message.token && typeof message.token.sub === "string") {
-        deleteGoogleToken(message.token.sub);
-      }
     },
   },
 });

@@ -21,12 +21,11 @@ export default function PrivacyPage() {
       </p>
       <h2>What stays on the server</h2>
       <ul>
-        <li>Your Gmail access token, in a file under .data/google, so a later visit can read mail again.</li>
-        <li>A refresh token inside the session cookie.</li>
+        <li>Your Gmail access token and refresh token, inside the encrypted session cookie, so a later visit can read mail again.</li>
         <li>The classification for a message, under .data/classifications, so a reload does not call the classifier again.</li>
       </ul>
       <p>
-        Signing out deletes the access-token file. To take the Gmail permission back, remove Triage at
+        Signing out clears that session. To take the Gmail permission back, remove Triage at
         https://myaccount.google.com/permissions.
       </p>
       <h2>Sharing</h2>
