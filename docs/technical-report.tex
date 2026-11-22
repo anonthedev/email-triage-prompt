@@ -1,0 +1,121 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.15cm]{geometry}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}
+\setmonofont{TeX Gyre Cursor}[Scale=0.88]
+
+\definecolor{ink}{HTML}{1C1917}
+\definecolor{accent}{HTML}{9A3412}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accent,
+  urlcolor=accent,
+  pdftitle={Triage: Technical Report},
+  pdfauthor={email-triage}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsf{Triage}}
+\fancyhead[R]{\small\textsf{Technical report}}
+\fancyfoot[L]{\small\textsf{21 November 2026}}
+\fancyfoot[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\footrulewidth}{0.3pt}
+
+\titleformat{\section}{\normalsize\sffamily\bfseries\color{ink}}{\thesection}{0.65em}{}
+\titlespacing*{\section}{0pt}{1.0em}{0.35em}
+\setlist[itemize]{leftmargin=1.15em,itemsep=0.18em,topsep=0.3em}
+\setlength{\parskip}{0.38em}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+\color{ink}
+
+{\sffamily\Huge Triage\par}
+\vspace{0.2em}
+{\large A read-only inbox that classifies faculty and office mail.\par}
+\vspace{0.55em}
+
+Faculty and office inboxes mix mail that staff can close with an acknowledgement and mail whose outcome a person has to decide. Triage reads a short slice of unread Gmail, or ten sample messages, and runs three NLP classifiers over each one: what kind of mail it is, how soon it needs attention, and whether a person must decide the outcome. The classifiers are Jev and Laya, both System One models. Nothing is sent. They do not write a reply.
+
+\section{How it is built}
+
+The app is one Next.js project. The home page classifies the sample fixtures. After Google sign-in, Unread loads up to 25 unread inbox messages. The same classifiers serve the pages, \texttt{npm run triage}, and \texttt{npm run eval}.
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Piece} & \textbf{Role} \\
+\midrule
+Next.js 16, React 19 & Pages, server actions, the mail board \\
+Auth.js & Google sign-in, \texttt{gmail.readonly} only \\
+Jev (\texttt{jev-latest}) & Hosted System One classifiers \\
+Laya & The same classifiers, run on a local server \\
+Disk cache in \texttt{.data/} & Skips a repeat call for the same body and model \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each message is posted to \texttt{TYPESAFE\_BASE\_URL/v1/systemone} as \texttt{\{ model, state, questions \}}. The state is the mailbox line, sender, subject, date, and body. Jev may read about 24{,}000 characters. Laya reads about the first 1{,}000. The hosted default is \texttt{jev-latest} at \texttt{https://api.typesafe.ai}. A local Laya server is typically \texttt{http://localhost:11435}. Results are cached by message id and body, so a reload does not call the classifiers again.
+
+\section{The classifiers}
+
+Jev and Laya return labels and probabilities. They are given three classifier heads, each with its own label set and decision rule. The heads are independent. A message can be the urgent kind of mail and still receive a different timing label, and the decision flag is computed from its own probability.
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+\textbf{Classifier} & \textbf{Head} & \textbf{Labels} \\
+\midrule
+Category & choice & advising, grades, scheduling, admin, research, vendor, fyi, urgent \\
+Priority & score & low, normal, high, urgent \\
+Needs a person & probability & yes when the probability is at least 0.50 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Category chooses one kind of mail. Priority places the message on a four-step scale from newsletter noise to something that has to be answered today. Needs-a-person is a yes or no: an extension, a regrade, a grade change, a recommendation letter, money, conduct, or someone in distress must be decided by a person. Picking a meeting time, reading a newsletter, declining a sales pitch, or filing ordinary paperwork stays with staff. A probability under 0.50 on that head is a no. A category or priority probability under 0.50 is shown as a weak label.
+
+The wording of those heads was saved twice. The first version named the eight categories and the four timing steps, and described a human decision as a reply that would change a grade, money, conduct, or a legal matter. On the ten fixtures, Jev assigned every category correctly and still treated an extension, a regrade, and a recommendation letter as mail staff could acknowledge. The second version names those cases, plus distress, as decisions a person must make. It also separates a meeting that can move to another day from work that is stuck this week or due today. Payroll, which only says ``end of the month,'' and the regrade, which names no deadline, then land on ordinary timing.
+
+\section{Test}
+
+Each fixture is one JSON file with a message and an expected category, priority, and decision. \texttt{npm run eval} scores all three heads. The set is an extension, a regrade, a recommendation, distress, a collaborator note, a vendor pitch, a newsletter, a meeting moved to today, office hours, and a payroll note.
+
+After the second version of the classifier text, those ten fixtures scored 10/10 on category, priority, and needs-a-person. Extension, regrade, and the recommendation letter came back as needing a person at 0.96--0.97. The collaborator note stayed with staff, at 0.09. The closest no in that run was payroll, at 0.22.
+
+\begin{center}
+\small
+\begin{tabular}{@{}llllll@{}}
+\toprule
+\textbf{Fixture} & \textbf{Category} & \textbf{Priority} & \textbf{Person} & \textbf{p(decides)} & \textbf{Result} \\
+\midrule
+extension & grades (1.00) & high (0.62) & yes & 0.97 & pass \\
+regrade & grades (1.00) & normal (0.53) & yes & 0.96 & pass \\
+collaborator & research (1.00) & normal (0.85) & no & 0.09 & pass \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The numbers in parentheses are how sure that label was. The least sure priority in the printed run was the regrade, at 0.53. A value under 0.50 would have been marked weak. None of these three were.
+
+\section{Limits}
+
+Google sign-in works only when the OAuth client and \texttt{AUTH\_SECRET} are set. Without them the home page still runs the classifiers on the ten fixtures, and that still needs \texttt{TYPESAFE\_API\_KEY}. The unread list stops at 25 messages. Laya sees only the opening of a long message, and the page says so when that happens. Two versions of the classifier text are saved. A third deliberate version has not been recorded.
+
+\end{document}
